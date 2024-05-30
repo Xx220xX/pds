@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráficos Interativos</title>
+    <!-- Importando a biblioteca do Google Charts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+
+    <style>
+        /* Estilos CSS */
+        .chart {
+            width: 70%;
+            height: 20%;
+        }
+
+        .chart-container {
+          
+        }
+        .slider-container {
+            width: 80%;
+            margin: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 70%;
+            height: 8px;
+            background: #ddd;
+            outline: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4CAF50;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: background 0.3s;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #4CAF50;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: background 0.3s;
+        }
+
+        .input-container {
+            width: 80%;
+            margin: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-direction: column;
+        }
+
+        .input-container input {
+            width: 300px;
+        }
+
+        .charts-container {
+            width: 80%;
+            /* grid 3x2 */
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            margin: auto;
+        }
+
+        .custom-input-container {
+            display: grid;
+            grid-template-columns: repeat(3, auto);
+            /* Três colunas com largura automática */
+            grid-column-gap: 10px;
+            /* Espaçamento entre as colunas */
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .custom-slider-container label {
+            margin-bottom: 5px;
+        }
+
+        .custom-slider-container input[type="text"],
+        .custom-slider-container input[type="number"] {
+            width: 100px;
+            padding: 5px;
+            margin-bottom: 5px;
+        }
+
+        .custom-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .custom-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="custom-input-container">
+        <div class="custom-slider-container">
+            <div class="custom-slider-container">
+                <label for="x(n)">Enter x(n):</label>
+                <input type="text" id="x(n)" value="0.5 ^ n * u(n)">
+                <label for="h(n)">Enter x(n):</label>
+                <input type="text" id="h(n)" value="u(n) - u(n-4)">
+            </div>
+            <div class="custom-slider-container">
+                <label for="n_min">n minimo:</label>
+                <input type="number" id="n_min" value="-10">
+                <label for="n_max">n máximo:</label>
+                <input type="number" id="n_max" value="10">
+            </div>
+        </div>
+
+        <button class="custom-button" id="generate_pds" onclick="generatePDS()">Generate Convolution</button>
+    </div>
+
+
+    <div class="slider-container">
+        <input type="range" id="slider_n" min="-10" max="10" step="1" value="0">
+        <span id="slider_value">0</span>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="charts-container">
+        <div class="chart"> <canvas id='chart_xk'></canvas> </div>
+        <div class="chart"> <canvas id='chart_hk'></canvas> </div>
+
+        <div class="chart"> <canvas id='chart_hnk'></canvas> </div>
+        <div class="chart"> <canvas id='chart_xnk'></canvas> </div>
+
+        <div class="chart"> <canvas id='chart_pxk'></canvas> </div>
+        <div class="chart"> <canvas id='chart_phk'></canvas> </div>
+    </div>
+
+    <!-- Slider para selecionar o valor de n -->
+
+    <!-- JavaScript -->
+    <script type="text/javascript">
+
+        const expression = function (x, callback) {
+            if (Array.isArray(x)) {
+                return x.map(callback);
+            }
+            return callback(x)
+        }
+        const u = function (n) {
+            return n >= 0 ? 1.0 : 0.0;
+        }
+
+        const delta = function (n) {
+            return n == 0 ? 1. : 0.;
+        }
+
+        const productV = function (x, y) {
+            return x.map((x, i) => x * y[i]);
+        }
+
+        class Stem extends Chart.controllers.line {
+
+
+            draw() {
+
+                // Now we can do some custom drawing for this dataset. Here we'll draw a red box around the first point in each dataset
+                const meta = this.getMeta();
+                const ctx = this.chart.ctx;
+                const yScale = this.chart.scales['y']; // Obter a escala do eixo y
+                const baseY = yScale.getPixelForValue(0); // Pegar a posição do valor 0 no eixo y
+
+
+                meta.data.forEach(p => {
+                    const { x, y } = p.getProps(['x', 'y']);
+                    if (y === baseY) {
+                        return
+                    }
+                    const pointColor = p.options.backgroundColor;
+                    ctx.strokeStyle = pointColor;
+                    ctx.beginPath();
+                    ctx.moveTo(x, baseY);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                    ctx.closePath();
+
+                });
+
+
+                super.draw(...arguments);
+            }
+        }
+        console.log(Stem.id)
+        Stem.id = 'stem';
+        console.log(Stem.id)
+
+
+        Chart.register(Stem);
+        // Chart.register(Stem);
+
+
+        // criar grafico
+        function createChart(element_id, title, borderColor) {
+            const ctx = document.getElementById(element_id).getContext('2d');
+            const data = [{ x: 0, y: 12 }, { x: 1, y: 19 }, { x: 2, y: 3 }, { x: 3, y: 5 }, { x: 4, y: 2 }];
+            // const randomColor =  `rgb(${Math.round(Math.random() * 255)}, ${Math.round(Math.random() * 255)}, ${Math.round(Math.random() * 255)})`;
+            const randomColor = `blue`;
+            const chart = new Chart(ctx, {
+                type: 'stem',
+                data: {
+                    labels: ['Point 1', 'Point 2', 'Point 3', 'Point 4', 'Point 5'],
+                    datasets: [{
+                        label: title,
+                        data: data,
+                        backgroundColor: randomColor,
+                        borderColor: randomColor,
+                        borderWidth: 2,
+                        pointRadius: 1,
+                        showLine: false,
+                    }]
+                },
+                options: {
+                    animation: {
+                        duration: 0 // Define a duração da animação em milissegundos (0 para desativar)
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom'
+                        },
+                        y: {
+                            // min: -0.5, // Define o limite inferior do eixo y
+                            // max: 1.5,  // Define o limite superior do eixo y
+                            beginAtZero: false // Certifique-se de que não está forçando o início em zero
+                        }
+                    }
+                }
+            });
+
+            async function update(x, y) {
+                // limpa os dados de data
+                data.splice(0, data.length);
+                // aloca espaco para os novos objetos
+                data.length = x.length;
+                // adiciona os novos dados de x e y
+                for (let i = 0; i < x.length; i++) {
+                    data[i] = { x: x[i], y: y[i] };
+                }
+                await chart.update();
+            }
+            async function fastUpdate(y) {
+                // limpa os dados de data
+                for (let i = 0; i < data.length; i++) {
+                    data[i].y = y[i];
+                }
+                await chart.update();
+            }
+            return { update, fastUpdate, ctx, data, chart };
+        }
+
+        const getN = function () {
+            try {
+                const n = parseInt(document.getElementById('slider_n').value);
+                document.getElementById('slider_value').innerHTML = `n:${n}`;
+                return n
+            } catch (e) {
+                console.err(e);
+                return 0
+            }
+        }
+
+
+
+        // Função para atualizar os gráficos quando o valor de n é alterado
+
+        let chart_xk;
+        let chart_hk;
+        let chart_xnk;
+        let chart_hnk;
+        let chart_pxk;
+        let chart_phk;
+        let sys;
+
+
+        const range = function (start, end) {
+            return Array.apply(null, { length: end - start + 1 }).map((_, i) => i + start)
+        }
+
+        const PDS = function (n_min, n_max, x, h) {
+            const slider = document.getElementById('slider_n');
+            this.n_min = n_min
+            this.n_max = n_max
+            slider.min = n_min;
+            slider.max = n_max;
+            this.x_func = x
+            this.h_func = h
+            this.x = function (n) { return expression(n, this.x_func) };
+            this.h = function (n) { return expression(n, this.h_func) };
+
+
+            // cria array k de - 2 nmin a 2 nmax
+            this.k = range(this.n_min, this.n_max);
+            const k = this.k;
+
+            this.all_solutions = {}
+            this.hk = this.h(k)
+            this.xk = this.x(k)
+
+            for (let n = this.n_min; n <= this.n_max; n++) {
+                const nk = k.map((x) => n - x);
+                let xnk = this.x(nk)
+                let hnk = this.h(nk)
+                let pxh = productV(this.xk, hnk)
+                let phx = productV(this.hk, xnk)
+
+                this.all_solutions[n] = { xnk, hnk, pxh, phx }
+            }
+            chart_xk.update(k, this.xk)
+            chart_hk.update(k, this.hk)
+
+            const { xnk, hnk, pxh, phx } = this.all_solutions[getN()];
+            chart_hnk.update(k, hnk)
+            chart_xnk.update(k, xnk)
+            chart_pxk.update(k, pxh)
+            chart_phk.update(k, phx)
+
+
+        }
+        function updateCharts() {
+            const { xnk, hnk, pxh, phx } = sys.all_solutions[getN()];
+            chart_hnk.fastUpdate(hnk)
+            chart_xnk.fastUpdate(xnk)
+            chart_pxk.fastUpdate(pxh)
+            chart_phk.fastUpdate(phx)
+        }
+
+        // Adicionando um listener de eventos para o slider de n
+        document.getElementById('slider_n').addEventListener('input', function () {
+            updateCharts();
+
+        });
+        document.addEventListener('DOMContentLoaded', function () {
+            chart_xk = createChart('chart_xk', 'x(k)');
+            chart_hk = createChart('chart_hk', 'h(k)', 'blue');
+            chart_xnk = createChart('chart_xnk', 'x(n-k)');
+            chart_hnk = createChart('chart_hnk', 'h(n-k)', 'blue');
+            chart_pxk = createChart('chart_pxk', 'x(k)*h(n-k)');
+            chart_phk = createChart('chart_phk', 'h(k)*x(n-k)', 'blue');
+            generatePDS();
+        })
+        const generatePDS = function () {
+            let n_min = parseInt(document.getElementById('n_min').value);
+            let n_max = parseInt(document.getElementById('n_max').value);
+            let x_func = document.getElementById('x(n)').value.replace('^', '**');
+            let h_func = document.getElementById('h(n)').value.replace('^', '**');;
+            let x = new Function('n', `return ${x_func}`);
+            let h = new Function('n', `return ${h_func}`);
+
+            // validar funções
+            try {
+                let y = x(0);
+                if (typeof y !== 'number') {
+                    throw new Error('x(n) deve retornar um número');
+                }
+            } catch (e) {
+                console.error(e);
+                alert(e.message);
+                return
+            }
+            try {
+                let y = h(0);
+                if (typeof y !== 'number') {
+                    throw new Error('h(n) deve retornar um número');
+                }
+            } catch (e) {
+                console.error(e);
+                alert(e.message);
+                return
+            }
+            console.log(x(0), h(0))
+            sys = new PDS(n_min, n_max, x, h);
+        }
+
+
+    </script>
+</body>
+
+</html>
