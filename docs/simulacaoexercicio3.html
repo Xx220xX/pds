@@ -11,9 +11,10 @@
     <!-- Importando Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body{
+        body {
             margin-bottom: 20px;
         }
+
         .CodeMirror {
             width: 100%;
             height: 100px;
@@ -73,8 +74,7 @@
                 <label for="y(n)">Enter y(n) analitic:</label>
                 <div class="input-group">
                     <span class="input-group-text" id="span_y">y(n) = </span>
-                    <input type="text" id="y(n)" class="form-control" value=""
-                        aria-describedby="span_y ">
+                    <input type="text" id="y(n)" class="form-control" value="" aria-describedby="span_y ">
                 </div>
             </div>
             <div class="col-md-6 mb-3">
@@ -133,16 +133,29 @@
             return Array.apply(null, { length: end - start + 1 }).map((_, i) => i + start)
         }
 
+
         const generateSimulation = () => {
             let code = textArea.value;
 
-            const padrao = /if\s*(-?\d+)\s*:/g;
+            const condicoesEQ = /if\s*(-?\d+)\s*:/g;
             const numerosEncontrados = [];
             let match;
             // Iterar sobre todas as correspondências
-            while ((match = padrao.exec(code)) !== null) {
+            while ((match = condicoesEQ.exec(code)) !== null) {
                 numerosEncontrados.push(parseInt(match[1])); // Capturar o número encontrado
             }
+
+            if(numerosEncontrados.length == 0){
+                numerosEncontrados.push(0)
+            }
+            const condicoesless = /less\s*(-?\d+)\s*=(-?\d+)/g;
+            let pre_code = '';
+            if((match = condicoesless.exec(code)) !== null){
+                pre_code = `if(n<${match[1]})return ${match[2]}`;
+                code = code.replace(condicoesless,'')
+            }
+
+
             const n_minimo = Math.min(...numerosEncontrados);
             const n_maximo = parseInt(document.getElementById('n_max').value);
             // replace "if" to case
@@ -151,8 +164,7 @@
             code = code.replaceAll(':', ': return ');
             code = code.replace('otherwise', 'default');
             // replace ": [-d]+" to return com regex
-            code = `switch(n) {\n${code}\n} `;
-            console.log(code)
+            code = `${pre_code}\n switch(n) {\n${code}\n} `;
             let code_analitic = document.getElementById('y(n)').value.replaceAll('^', '**')
             let code_x_n = document.getElementById('x(n)').value.replaceAll('^', '**')
 
@@ -176,19 +188,19 @@
             ya = y_analitic;
             this.n = range(this.n_min, this.n_max);
 
-            this.analitic = []
-            this.recursive = []
-            this.input = []
-            this.erro = []
+            this.analitic = new Array(this.n.length);
+            this.recursive = new Array(this.n.length);
+            this.input = new Array(this.n.length);
+            this.erro = new Array(this.n.length);
             let i = 0;
+
             for (let n = this.n_min; n <= this.n_max; n++) {
                 let r = y(n)
                 let a = y_analitic(n)
-                this.analitic.push(a);
-                this.recursive.push(r);
-                this.input.push(x(n));
-                this.erro.push(+r - a);
-                console.log(i, r, a, x(n), +r - a)
+                this.analitic[i] = a;
+                this.recursive[i] = r;
+                this.input[i] = x(n);
+                this.erro[i] = +r - a;
                 i++;
             }
 
@@ -202,9 +214,9 @@
 
 
         document.addEventListener('DOMContentLoaded', function () {
-            textArea.value = 'if -2: 0\nif -1: 0\notherwise: 3/4*y(n-1)-1/8*y(n-2)+x(n)-x(n-1)';
+            textArea.value = 'less 0=0\notherwise: 3/4*y(n-1)-1/8*y(n-2)+x(n)-x(n-1)';
             document.getElementById('x(n)').value = 'delta(n)';
-            document.getElementById('y(n)').value = '0';
+            document.getElementById('y(n)').value = '3*(1/4)^n-2*(1/2)^n';
             graph = createMultiChart('graph', ['x(n)', 'y(n): analitic', 'y(n): recursive', 'Erro']);
             generateSimulation();
         })

@@ -21,7 +21,7 @@ const productV = function (x, y) {
 const e =  Math.exp(1);
 const pi =  Math.PI;
 const sin = (x) =>  Math.sin(x);
-const cos = (x) =>  Math.sin(x);
+const cos = (x) =>  Math.cos(x);
 const exp = (x)=>  Math.exp(x);
 const log = (x)=>  Math.log(x);
 const log10 = (x)=>  Math.log10(x);

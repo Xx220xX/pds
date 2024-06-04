@@ -136,13 +136,26 @@
         const generateSimulation = () => {
             let code = textArea.value;
 
-            const padrao = /if\s*(-?\d+)\s*:/g;
+          
+            const condicoesEQ = /if\s*(-?\d+)\s*:/g;
             const numerosEncontrados = [];
             let match;
             // Iterar sobre todas as correspondências
-            while ((match = padrao.exec(code)) !== null) {
+            while ((match = condicoesEQ.exec(code)) !== null) {
                 numerosEncontrados.push(parseInt(match[1])); // Capturar o número encontrado
             }
+
+            if(numerosEncontrados.length == 0){
+                numerosEncontrados.push(0)
+            }
+            const condicoesless = /less\s*(-?\d+)\s*=(-?\d+)/g;
+            let pre_code = '';
+            if((match = condicoesless.exec(code)) !== null){
+                pre_code = `if(n<${match[1]})return ${match[2]}`;
+                code = code.replace(condicoesless,'')
+            }
+
+
             const n_minimo = Math.min(...numerosEncontrados);
             const n_maximo = parseInt(document.getElementById('n_max').value);
             // replace "if" to case
@@ -151,8 +164,7 @@
             code = code.replaceAll(':', ': return ');
             code = code.replace('otherwise', 'default');
             // replace ": [-d]+" to return com regex
-            code = `switch(n) {\n${code}\n} `;
-            console.log(code)
+            code = `${pre_code}\n switch(n) {\n${code}\n} `;
             let code_analitic = document.getElementById('y(n)').value.replaceAll('^', '**')
             let code_x_n = document.getElementById('x(n)').value.replaceAll('^', '**')
 
