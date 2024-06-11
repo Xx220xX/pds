@@ -4,12 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulação 3</title>
+    <title>Simulador de Sistemas</title>
     <!-- Importando a biblioteca do Google Charts -->
     <script src="./lib/chart.min.js"></script>
+    <script src="./lib/mathFunction.js"></script>
     <script src="./lib/extend_chart.js"></script>
     <!-- Importando Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
     <style>
         body {
             margin-bottom: 20px;
@@ -110,7 +112,8 @@
     <!-- JavaScript -->
     <script type="text/javascript">
         const textArea = document.getElementById("code");
-
+        const xArea = document.getElementById("x(n)");
+        const yaArea = document.getElementById("y(n)");
         const getN = function () {
             try {
                 const n = parseInt(document.getElementById('slider_n').value);
@@ -133,44 +136,16 @@
             return Array.apply(null, { length: end - start + 1 }).map((_, i) => i + start)
         }
 
-
         const generateSimulation = () => {
-            let code = textArea.value;
-
-            const condicoesEQ = /if\s*(-?\d+)\s*:/g;
-            const numerosEncontrados = [];
-            let match;
-            // Iterar sobre todas as correspondências
-            while ((match = condicoesEQ.exec(code)) !== null) {
-                numerosEncontrados.push(parseInt(match[1])); // Capturar o número encontrado
-            }
-
-            if(numerosEncontrados.length == 0){
-                numerosEncontrados.push(0)
-            }
-            const condicoesless = /less\s*(-?\d+)\s*=(-?\d+)/g;
-            let pre_code = '';
-            if((match = condicoesless.exec(code)) !== null){
-                pre_code = `if(n<${match[1]})return ${match[2]}`;
-                code = code.replace(condicoesless,'')
-            }
-
-
-            const n_minimo = Math.min(...numerosEncontrados);
             const n_maximo = parseInt(document.getElementById('n_max').value);
-            // replace "if" to case
-            code = code.replaceAll('if', 'case ');
-            // replace "otherwise" to default
-            code = code.replaceAll(':', ': return ');
-            code = code.replace('otherwise', 'default');
-            // replace ": [-d]+" to return com regex
-            code = `${pre_code}\n switch(n) {\n${code}\n} `;
-            let code_analitic = document.getElementById('y(n)').value.replaceAll('^', '**')
-            let code_x_n = document.getElementById('x(n)').value.replaceAll('^', '**')
-
-            const _y = new Function('n', `${code}`);
-            const y_analitic = new Function('n', `return ${code_analitic}`);
-            const _x = new Function('n', `return ${code_x_n}`);
+            let code_analitic = yaArea.value;
+            let code_x_n = xArea.value;
+            const codeyRecursive = textArea.value;
+            setURLParams({ n:n_maximo, yr:codeyRecursive, ya:code_analitic, xn:code_x_n,title:document.title });
+            const { n_minimo, f } = hardRecursiveFunction(codeyRecursive);
+            const _y = f;
+            const y_analitic = simpleRecursiveFunction(code_analitic);
+            const _x = simpleRecursiveFunction(code_x_n);
 
             sys = new PDS(n_minimo, n_maximo, _x, y_analitic, _y);
 
@@ -188,19 +163,18 @@
             ya = y_analitic;
             this.n = range(this.n_min, this.n_max);
 
-            this.analitic = new Array(this.n.length);
-            this.recursive = new Array(this.n.length);
-            this.input = new Array(this.n.length);
-            this.erro = new Array(this.n.length);
+            this.analitic = []
+            this.recursive = []
+            this.input = []
+            this.erro = []
             let i = 0;
-
             for (let n = this.n_min; n <= this.n_max; n++) {
                 let r = y(n)
                 let a = y_analitic(n)
-                this.analitic[i] = a;
-                this.recursive[i] = r;
-                this.input[i] = x(n);
-                this.erro[i] = +r - a;
+                this.analitic.push(a);
+                this.recursive.push(r);
+                this.input.push(x(n));
+                this.erro.push(+r - a);
                 i++;
             }
 
@@ -214,11 +188,23 @@
 
 
         document.addEventListener('DOMContentLoaded', function () {
-            textArea.value = 'less 0=0\notherwise: 3/4*y(n-1)-1/8*y(n-2)+x(n)-x(n-1)';
-            document.getElementById('x(n)').value = 'delta(n)';
-            document.getElementById('y(n)').value = '3*(1/4)^n-2*(1/2)^n';
+            const params = getURLParams();
+            
+            document.getElementById('n_max').value = 'n' in params? params.n: 10;
+            document.getElementById('n_max').onchange = generateSimulation;
+            
+            textArea.value = 'yr' in params? params.yr: 'if<0:0;\notherwise: 3/4*y(n-1)-1/8*y(n-2)+x(n)-x(n-1)';
+            xArea.value = 'xn' in params? params.xn: 'delta(n)';
+            yaArea.value = 'ya' in params? params.ya: '3*(1/4)^n-2*(1/2)^n';
+            if ('title' in params) {
+                document.title = params.title;
+            }else{
+                document.title = 'Simulador de Sistemas';
+            }
             graph = createMultiChart('graph', ['x(n)', 'y(n): analitic', 'y(n): recursive', 'Erro']);
-            generateSimulation();
+            // aguardar os valores serem carregados
+            generateSimulation()
+
         })
 
 

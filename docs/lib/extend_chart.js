@@ -5,27 +5,6 @@ const expression = function (x, callback) {
     }
     return callback(x)
 }
-const u = function (n) {
-    return n >= 0 ? 1.0 : 0.0;
-}
-
-const delta = function (n) {
-    return n == 0 ? 1. : 0.;
-}
-
-const productV = function (x, y) {
-    return x.map((x, i) => x * y[i]);
-}
-
-// math functions
-const e =  Math.exp(1);
-const pi =  Math.PI;
-const sin = (x) =>  Math.sin(x);
-const cos = (x) =>  Math.cos(x);
-const exp = (x)=>  Math.exp(x);
-const log = (x)=>  Math.log(x);
-const log10 = (x)=>  Math.log10(x);
-const abs = (x)=>  Math.abs(x);
 
 class Stem extends Chart.controllers.line {
 
