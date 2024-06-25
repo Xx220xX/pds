@@ -69,44 +69,40 @@
     </style>
 </head>
 
-<body class="container mt-5">
+<body class="container mt-5 mb-5">
     <div class="custom-input-container mb-4">
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="y(n)">Enter y(n) analitic:</label>
-                <div class="input-group">
-                    <span class="input-group-text" id="span_y">y(n) = </span>
-                    <input type="text" id="y(n)" class="form-control" value="" aria-describedby="span_y ">
-                </div>
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="x(n)">Enter x(n):</label>
-                <input type="text" id="x(n)" class="form-control" value="u(n)" />
+        <div class="row mb-2">
+            <label for="y(n)">Enter y(n) analitic:</label>
+            <div class="input-group">
+                <span class="input-group-text" id="span_y">y(n) = </span>
+                <textarea id="y(n)" class="form-control" aria-describedby="span_y" style="height: 50px;"></textarea>
             </div>
         </div>
 
-        <div class="row mb-3">
-            <div class="col-md-12">
-                <label for="code">Enter y(n) recursive:</label>
-                <textarea id="code" class="form-control" style="height: 200px;"></textarea>
+        <div class="row mb-2">
+            <label for="x(n)">Enter Input function:</label>
+            <div class="input-group">
+                <span class="input-group-text" id="span_x">x(n) = </span>
+                <textarea type="text" id="x(n)" class="form-control" aria-describedby="span_x" value="u(n)"
+                    style="height: 50px;"></textarea>
             </div>
         </div>
 
+        <div class="row mb-2">
+            <label for="code">Enter y(n) recursive:</label>
+            <textarea id="code" class="form-control" style="height: 200px;"></textarea>
+        </div>
+
         <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="n_max">n máximo:</label>
-                <input type="number" id="n_max" class="form-control" value="10" />
-            </div>
+            <label for="n_max">n máximo:</label>
+            <input type="number" id="n_max" class="form-control" value="10" />
         </div>
 
         <button class="btn btn-success" id="generate_pds" onclick="generateSimulation()">Simular</button>
     </div>
 
     <div class="charts-container row">
-        <div class="row-md">
-            <canvas id='graph' class="chart"></canvas>
-        </div>
-
+        <canvas id='graph' class="chart"></canvas>
     </div>
 
     <!-- JavaScript -->
@@ -141,7 +137,7 @@
             let code_analitic = yaArea.value;
             let code_x_n = xArea.value;
             const codeyRecursive = textArea.value;
-            setURLParams({ n:n_maximo, yr:codeyRecursive, ya:code_analitic, xn:code_x_n,title:document.title });
+            setURLParams({ n: n_maximo, yr: codeyRecursive, ya: code_analitic, xn: code_x_n, title: document.title });
             const { n_minimo, f } = hardRecursiveFunction(codeyRecursive);
             const _y = f;
             const y_analitic = simpleRecursiveFunction(code_analitic);
@@ -189,16 +185,16 @@
 
         document.addEventListener('DOMContentLoaded', function () {
             const params = getURLParams();
-            
-            document.getElementById('n_max').value = 'n' in params? params.n: 10;
+
+            document.getElementById('n_max').value = 'n' in params ? params.n : 10;
             document.getElementById('n_max').onchange = generateSimulation;
-            
-            textArea.value = 'yr' in params? params.yr: 'if<0:0;\notherwise: 3/4*y(n-1)-1/8*y(n-2)+x(n)-x(n-1)';
-            xArea.value = 'xn' in params? params.xn: 'delta(n)';
-            yaArea.value = 'ya' in params? params.ya: '3*(1/4)^n-2*(1/2)^n';
+
+            textArea.value = 'yr' in params ? params.yr : 'if<0:0;\notherwise: 3/4*y(n-1)-1/8*y(n-2)+x(n)-x(n-1)';
+            xArea.value = 'xn' in params ? params.xn : 'delta(n)';
+            yaArea.value = 'ya' in params ? params.ya : '3*(1/4)^n-2*(1/2)^n';
             if ('title' in params) {
                 document.title = params.title;
-            }else{
+            } else {
                 document.title = 'Simulador de Sistemas';
             }
             graph = createMultiChart('graph', ['x(n)', 'y(n): analitic', 'y(n): recursive', 'Erro']);

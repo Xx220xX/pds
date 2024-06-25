@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Colorir Palavras no Textarea</title>
+  <style>
+    .container {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    textarea,
+    .highlight {
+      width: 100%;
+      min-height: 200px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      box-sizing: border-box;
+    }
+
+    textarea {
+      background: transparent;
+      color: transparent;
+      caret-color: black;
+      z-index: 1;
+    }
+
+    .highlight {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: white;
+      color: black;
+      z-index: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <textarea id="inputText"></textarea>
+    <div class="highlight" id="highlightText"></div>
+  </div>
+
+  <script>
+    class HighLight {
+      constructor(textarea, highlightText, highlightConfigurations) {
+        this.textarea = textarea;
+        this.highlightText = highlightText;
+
+        this.mapkeys = {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        };
+
+
+        this.keywords = []
+        this.colors = {}
+        for (const keywordsConfigure of highlightConfigurations) {
+          for (const key of keywordsConfigure.keywords) {
+            this.keywords.push(key);
+            this.colors[key] = keywordsConfigure.color;
+          }
+        }
+        console.log(this.keywords.join('|'))
+
+        this.regex = new RegExp(`\\b(${this.keywords.join('|')})\\b|[\(\)\^\*\]`, 'gi')
+
+        this.textarea.addEventListener('input', () => this.updateHighlight());
+        this.updateHighlight();
+      }
+      map(m) {
+        return this.mapkeys[m];
+      }
+
+      updateHighlight() {
+        const text = this.textarea.value.replace(/[&<>"']/g, this.map);
+        let coloredText = text.replace(this.regex, (match) => {
+          let color = this.colors[match.toLowerCase()] || 'red';
+          if (match.match('[\\d]+')){
+
+          }
+          return `<span style="color: ${color};">${match}</span>`;
+        });
+        this.highlightText.innerHTML = coloredText;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+      const highlight = new HighLight(document.getElementById('inputText'),
+        document.getElementById('highlightText'),
+        [
+          { keywords: ['if', 'otherwise'], color: 'blue' },
+          { keywords: ['cos', 'sin', 'exp', 'u', 'delta', 'log', 'log10', 'ln'], color: '#4a57fc' },
+          {keywords:['[\\d\]+']}
+        ])
+
+    })
+  </script>
+</body>
+
+</html>
