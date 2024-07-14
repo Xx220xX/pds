@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FIR Filters</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://getbootstrap.com/docs/5.3/assets/css/docs.css" rel="stylesheet">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/monokai-sublime.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script src="lib/extend_chart.js"></script>
+    <script src="lib/fir.js"></script>
+
+    <style>
+        body {
+            background-color: #333333;
+            color: #ffffff;
+        }
+
+        .btn-check:checked+.btn {
+            color: #ffffff;
+            background-color: #121212;
+            border-color: #666666;
+        }
+
+        .btn {
+            color: #ffffff;
+            background-color: #222222;
+            border-color: #444444;
+        }
+
+        .btn:hover {
+            color: #ffffff;
+            background-color: #444444;
+            border-color: #666666;
+        }
+
+        .input-group-text {
+            background-color: #333333;
+            color: #ffffff;
+            border: 1px solid #444444;
+        }
+
+        .form-control {
+            background-color: #222222;
+            color: #ffffff;
+            border: 1px solid #444444;
+        }
+
+        .chart {
+            width: 49.5%;
+            height: 50%;
+            background-color: #ffffff;
+        }
+
+        .code-container {
+            position: relative;
+            background-color: #2d2d2d;
+            border-radius: 5px;
+            overflow: hidden;
+            padding: 16px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .copy-button:hover {
+            color: #ccc;
+        }
+
+        .code-title {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        pre {
+            margin: 0;
+            padding-top: 32px;
+            color: #f8f8f2;
+            background-color: #2d2d2d;
+        }
+
+        code {
+            display: block;
+            white-space: pre;
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+        }
+    </style>
+</head>
+
+<body class="p-3 m-0 border-0 bd-example m-0 border-0">
+   
+    <div class="container">
+        <div class="input-group mb-3">
+            <span class="input-group-text">Fs</span>
+            <input type="number" min="0" class="form-control" placeholder="Frequencia amostragem [Hz]" aria-label="for"
+                value="8000" id="input-fs">
+            <span class="input-group-text">f<sub>0</sub></span>
+            <input type="number" min="0" class="form-control" placeholder="Frequencia passagem [Hz]" aria-label="for"
+                value="760" id="input-f0">
+            <span class="input-group-text">f<sub>1</sub></span>
+            <input type="number" min="0" class="form-control" placeholder="Frequencia passagem [Hz]" aria-label="for"
+                value="840" id="input-f1">
+            <span class="input-group-text">&delta;</span>
+            <input type="number" min="0" max="1" step="0.001" class="form-control" placeholder="Ripple" value="0.01"
+                aria-label="for" id="input-delta" >
+        </div>
+        <label  id="input-w0" class="form-label">Frequencia de corte: </label>
+    </div>
+
+    <div class="container">
+        <div class="input-group mb-3">
+            <!-- Resposta em frequencia  -->
+            <div class="chart" style=" margin-right: 1%;"> <canvas id='H'></canvas> </div>
+            <!-- Resposta em impusiva -->
+            <div class="chart"> <canvas id='h'></canvas> </div>
+        </div>
+    </div>
+
+    <div class="code-container">
+        <span class="code-title">coeficientes</span>
+        <button class="copy-button" onclick="copyCode()">Copiar código</button>
+        <pre><code id="code" class="c">
+</code></pre>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+
+    <script>
+        const input_fs = document.getElementById('input-fs');
+        const input_f0 = document.getElementById('input-f0');
+        const input_f1 = document.getElementById('input-f1');
+        const input_w0 = document.getElementById('input-w0');
+        const input_delta = document.getElementById('input-delta');
+        const output_code = document.getElementById('code');
+
+        const windows = [{ label: 'Retangular', borderColor: 'green', backgroundColor: 'green', }, { label: 'Hanning', borderColor: 'red', backgroundColor: 'red' }, { label: 'Hamming', borderColor: 'blue', backgroundColor: 'blue' }, { label: 'Blackman', borderColor: 'black', backgroundColor: 'black' }, { label: 'Kayser', borderColor: 'orange', backgroundColor: 'orange' }];
+
+
+        const chart_h_impulsive = createMultiChart('h', windows, 'Resposta Impulsiva', 'stem');
+        const chart_h_response = createMultiChart('H', windows.map(win => { return { ...win, showLine: true, pointRadius: 0 } }), 'Resposta Espectral', 'line');
+        const generateFilter = async () => {
+            const Fs = parseFloat(input_fs.value);
+            const f0 = parseFloat(input_f0.value);
+            const f1 = parseFloat(input_f1.value);
+            const delta = parseFloat(input_delta.value);
+            const deslocamento = parseFloat(input_w0.value);
+            const fc = ((f0+f1)/2).toFixed(0);
+            input_w0.innerText = `Frequencia de corte: ${fc} Hz`; 
+
+            if (f1 <= f0) {
+                alert('f1 deve ser maior que f0');
+                return;
+            }
+            if (f1 > Fs / 2) {
+                alert('f1 deve ser menor que Fs/2');
+                return;
+            }
+
+            const filters = [
+                FIR.Hanning(f0, f1, Fs),
+                FIR.Rectangle(f0, f1, Fs),
+                FIR.Hamming(f0, f1, Fs),
+                FIR.Blackman(f0, f1, Fs),
+                FIR.Kayser(f0, f1, Fs, delta),
+            ]
+            const w = Array.from({ length: 400 }, (_, i) => i / 400. * Math.PI * 2);
+            const f = w.map(w=>w/Math.PI*Fs/2);
+            for (let i = 0; i < filters.length; i++) {
+                const x = Array.from({ length: filters[i].h.length }, (_, i) => i);
+                filters[i].h = filters[i].h.map((h, i) => h);
+                chart_h_impulsive.update(x, filters[i].h, i);
+                FIR.TFDFT(filters[i].h, w).then((H) => chart_h_response.update(f, H.map(s => s.abs), i));
+            }
+
+            let code = ``;
+
+            for await (let filter of filters) {
+                code += `${filter.name} = [${filter.h.join(',')}];\r`;
+            }
+          
+            output_code.innerHTML = code;
+            hljs.highlightAll();
+
+
+        }
+
+        input_fs.addEventListener('change', generateFilter);
+        input_f0.addEventListener('change', generateFilter);
+        input_f1.addEventListener('change', generateFilter);
+        input_delta.addEventListener('change', generateFilter);
+        // input_w0.addEventListener('change', generateFilter);
+        generateFilter()
+
+        function copyCode() {
+            // Get the code block
+            var code = document.getElementById("code-c").innerText;
+
+            // Create a temporary textarea element
+            var tempTextArea = document.createElement("textarea");
+            tempTextArea.value = code;
+            document.body.appendChild(tempTextArea);
+
+            // Select the text and copy it
+            tempTextArea.select();
+            document.execCommand("copy");
+
+            // Remove the temporary textarea element
+            document.body.removeChild(tempTextArea);
+
+            // Optional: Alert the user that the code has been copied
+            alert("Código copiado para a área de transferência!");
+        }
+    </script>
+</body>
+
+</html>

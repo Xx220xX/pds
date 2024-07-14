@@ -101,29 +101,38 @@ function createChart(element_canvas_id, title, borderColor) {
 }
 
 
-function createMultiChart(element_canvas_id, titles) {
+function createMultiChart(element_canvas_id, curves, title, type = 'stem') {
     const ctx = document.getElementById(element_canvas_id).getContext('2d');
-   
+
     // const randomColor = `blue`;
     const datasets = [];
-    
-    for (const title of titles) {
-        const randomColor =  `rgb(${Math.round(Math.random() * 255)}, ${Math.round(Math.random() * 255)}, ${Math.round(Math.random() * 255)})`;
-        const dt = new Array(1);
-        dt[0] = { x: 0, y: 12 };
+    curves = curves.map(curve => {
+        if (typeof(curve) === 'string') {
+            return { label: curve };
+        }
+        return curve;
+    })
+        
+        
+
+    for (const curve of curves) {
+        const randomColor = `rgb(${Math.round(Math.random() * 255)}, ${Math.round(Math.random() * 255)}, ${Math.round(Math.random() * 255)})`;
+        const dt = new Array(2);
+        dt[0] = { x: 0, y: 1 };
+        dt[1] = { x: 1, y: 12 };
         datasets.push({
-            label: title,
-            data:  dt,
+            data: dt,
             backgroundColor: randomColor,
             borderColor: randomColor,
             borderWidth: 2,
             pointRadius: 1,
             showLine: false,
+            ...curve
         })
-        
+
     }
     const chart = new Chart(ctx, {
-        type: 'stem',
+        type,
         data: {
             datasets
         },
@@ -142,10 +151,20 @@ function createMultiChart(element_canvas_id, titles) {
                     beginAtZero: false // Certifique-se de que não está forçando o início em zero
                 }
             }
+            , plugins: {
+                title: {
+                    display: true,
+                    text: title,
+                    padding: {
+                        top: 10,
+                        bottom: 30
+                    }
+                }
+            }
         }
     });
 
-    async function update(x, y,dataset_id) {
+    async function update(x, y, dataset_id) {
         // limpa os dados de data
         const data = chart.data.datasets[dataset_id].data;
         data.splice(0, data.length);
@@ -157,7 +176,7 @@ function createMultiChart(element_canvas_id, titles) {
         }
         await chart.update();
     }
-    async function fastUpdate(y,dataset_id) {
+    async function fastUpdate(y, dataset_id) {
         const data = chart.data.datasets[dataset_id].data;
         // limpa os dados de data
         for (let i = 0; i < data.length; i++) {
