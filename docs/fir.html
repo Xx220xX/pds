@@ -51,10 +51,23 @@
             border: 1px solid #444444;
         }
 
+
         .chart {
             width: 49.5%;
             height: 50%;
             background-color: #ffffff;
+        }
+
+        @media (max-width: 768px) {
+            .chart {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            #input-group {
+                display: flex;
+                flex-direction: row;
+            }
         }
 
         .code-container {
@@ -107,23 +120,39 @@
 </head>
 
 <body class="p-3 m-0 border-0 bd-example m-0 border-0">
-   
+
     <div class="container">
-        <div class="input-group mb-3">
-            <span class="input-group-text">Fs</span>
-            <input type="number" min="0" class="form-control" placeholder="Frequencia amostragem [Hz]" aria-label="for"
-                value="8000" id="input-fs">
-            <span class="input-group-text">f<sub>0</sub></span>
-            <input type="number" min="0" class="form-control" placeholder="Frequencia passagem [Hz]" aria-label="for"
-                value="760" id="input-f0">
-            <span class="input-group-text">f<sub>1</sub></span>
-            <input type="number" min="0" class="form-control" placeholder="Frequencia passagem [Hz]" aria-label="for"
-                value="840" id="input-f1">
-            <span class="input-group-text">&delta;</span>
-            <input type="number" min="0" max="1" step="0.001" class="form-control" placeholder="Ripple" value="0.01"
-                aria-label="for" id="input-delta" >
+        <div class="row g-2">
+            <div class="col-md">
+                <div class="form-floating">
+                    <input type="number" min="0" class="form-control" placeholder="Frequencia amostragem [Hz]"
+                        aria-label="for" value="8000" id="input-fs">
+                    <label for="input-fs">Fs</label>
+                </div>
+            </div>
+            <div class="col-md">
+                <div class="form-floating">
+                    <input type="number" min="0" max="1" step="0.001" class="form-control" placeholder="Ripple" value="0.01" aria-label="for" id="input-delta">
+                    <label for="input-f0">&delta;</label>
+                </div>
+            </div>
         </div>
-        <label  id="input-w0" class="form-label">Frequencia de corte: </label>
+        <div class="row g-2">
+            <div class="col-md">
+                <div class="form-floating">
+                    <input type="number" min="0" class="form-control" placeholder="Frequencia passagem [Hz]" aria-label="for" value="760" id="input-f0">
+                    <label for="input-f0">f<sub>0</sub></label>
+                </div>
+            </div>
+            <div class="col-md">
+                <div class="form-floating">
+                    <input type="number" min="0" class="form-control" placeholder="Frequencia passagem [Hz]" aria-label="for" value="840" id="input-f1">
+                    <label for="input-f1">f<sub>1</sub></label>
+                </div>
+            </div>
+        </div>
+
+        <label id="input-w0" class="form-label">Frequencia de corte: </label>
     </div>
 
     <div class="container">
@@ -163,8 +192,8 @@
             const f1 = parseFloat(input_f1.value);
             const delta = parseFloat(input_delta.value);
             const deslocamento = parseFloat(input_w0.value);
-            const fc = ((f0+f1)/2).toFixed(0);
-            input_w0.innerText = `Frequencia de corte: ${fc} Hz`; 
+            const fc = ((f0 + f1) / 2).toFixed(0);
+            input_w0.innerText = `Frequencia de corte: ${fc} Hz`;
 
             if (f1 <= f0) {
                 alert('f1 deve ser maior que f0');
@@ -183,7 +212,7 @@
                 FIR.Kayser(f0, f1, Fs, delta),
             ]
             const w = Array.from({ length: 400 }, (_, i) => i / 400. * Math.PI * 2);
-            const f = w.map(w=>w/Math.PI*Fs/2);
+            const f = w.map(w => w / Math.PI * Fs / 2);
             for (let i = 0; i < filters.length; i++) {
                 const x = Array.from({ length: filters[i].h.length }, (_, i) => i);
                 filters[i].h = filters[i].h.map((h, i) => h);
@@ -196,7 +225,7 @@
             for await (let filter of filters) {
                 code += `${filter.name} = [${filter.h.join(',')}];\r`;
             }
-          
+
             output_code.innerHTML = code;
             hljs.highlightAll();
 
