@@ -132,7 +132,8 @@
             </div>
             <div class="col-md">
                 <div class="form-floating">
-                    <input type="number" min="0" max="1" step="0.001" class="form-control" placeholder="Ripple" value="0.01" aria-label="for" id="input-delta">
+                    <input type="number" min="0" max="1" step="0.001" class="form-control" placeholder="Ripple"
+                        value="0.01" aria-label="for" id="input-delta">
                     <label for="input-f0">&delta;</label>
                 </div>
             </div>
@@ -140,13 +141,15 @@
         <div class="row g-2">
             <div class="col-md">
                 <div class="form-floating">
-                    <input type="number" min="0" class="form-control" placeholder="Frequencia passagem [Hz]" aria-label="for" value="760" id="input-f0">
+                    <input type="number" min="0" class="form-control" placeholder="Frequencia passagem [Hz]"
+                        aria-label="for" value="760" id="input-f0">
                     <label for="input-f0">f<sub>0</sub></label>
                 </div>
             </div>
             <div class="col-md">
                 <div class="form-floating">
-                    <input type="number" min="0" class="form-control" placeholder="Frequencia passagem [Hz]" aria-label="for" value="840" id="input-f1">
+                    <input type="number" min="0" class="form-control" placeholder="Frequencia passagem [Hz]"
+                        aria-label="for" value="840" id="input-f1">
                     <label for="input-f1">f<sub>1</sub></label>
                 </div>
             </div>
@@ -180,7 +183,7 @@
         const input_w0 = document.getElementById('input-w0');
         const input_delta = document.getElementById('input-delta');
         const output_code = document.getElementById('code');
-
+        let show_as = 'ABS';//'LOG'
         const windows = [{ label: 'Retangular', borderColor: 'green', backgroundColor: 'green', }, { label: 'Hanning', borderColor: 'red', backgroundColor: 'red' }, { label: 'Hamming', borderColor: 'blue', backgroundColor: 'blue' }, { label: 'Blackman', borderColor: 'black', backgroundColor: 'black' }, { label: 'Kayser', borderColor: 'orange', backgroundColor: 'orange' }];
 
 
@@ -217,7 +220,11 @@
                 const x = Array.from({ length: filters[i].h.length }, (_, i) => i);
                 filters[i].h = filters[i].h.map((h, i) => h);
                 chart_h_impulsive.update(x, filters[i].h, i);
-                FIR.TFDFT(filters[i].h, w).then((H) => chart_h_response.update(f, H.map(s => s.abs), i));
+                if (show_as == 'LOG') {
+                    FIR.TFDFT(filters[i].h, w).then((H) => chart_h_response.update(f, H.map(s => Math.max(20*Math.log10(s.abs),-90)), i));
+                } else {
+                    FIR.TFDFT(filters[i].h, w).then((H) => chart_h_response.update(f, H.map(s => s.abs), i));
+                }
             }
 
             let code = ``;
